@@ -19,143 +19,138 @@ import java.util.logging.Logger;
 public class ProyectoDAO {
     private static final Logger LOGGER = Logger.getLogger(ProyectoDAO.class.getName());
     
-    private static final String SQL_SELECT = "SELECT id, nombre, descripcion, fecha_inicio, fecha_fin, estado FROM proyectos";
-    private static final String SQL_INSERT = "INSERT INTO proyectos (nombre, descripcion, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, ?, ?)";
-    private static final String SQL_UPDATE = "UPDATE proyectos SET nombre=?, descripcion=?, fecha_inicio=?, fecha_fin=?, estado=? WHERE id=?";
-    private static final String SQL_DELETE = "DELETE FROM proyectos WHERE id=?";
-    
-    public List<Proyecto> obtenerTodos() {
-        List<Proyecto> proyectos = new ArrayList<>();
+    // CRUD methods
+    public boolean agregar(Proyecto proyecto) {
+        String sql = "INSERT INTO proyectos(nombre, descripcion, fecha_inicio, fecha_fin, estado) "
+                   + "VALUES(?, ?, ?, ?, ?)";
         
         try (Connection conn = ConexionBD.obtenerConexion();
-             PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT);
-             ResultSet rs = pstmt.executeQuery()) {
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            while (rs.next()) {
-                Proyecto proyecto = mapearProyecto(rs);
-                proyectos.add(proyecto);
+            setProyectoParameters(pstmt, proyecto);
+            
+            int affectedRows = pstmt.executeUpdate();
+            
+            if (affectedRows > 0) {
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        proyecto.setId(rs.getInt(1));
+                        return true;
+                    }
+                }
             }
-            conn.commit();
-        } catch (SQLException e) {
-            ConexionBD.rollback();
-            LOGGER.log(Level.SEVERE, "Error al obtener proyectos", e);
-            throw new RuntimeException("Error al obtener proyectos de la base de datos", e);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error al agregar proyecto", ex);
         }
-        return proyectos;
+        return false;
     }
     
-    public Proyecto obtenerPorId(int id) {
-        String sql = SQL_SELECT + " WHERE id = ?";
+    public boolean actualizar(Proyecto proyecto) {
+        String sql = "UPDATE proyectos SET nombre=?, descripcion=?, fecha_inicio=?, "
+                   + "fecha_fin=?, estado=? WHERE id_proyecto=?";
         
         try (Connection conn = ConexionBD.obtenerConexion();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setInt(1, id);
+            setProyectoParameters(pstmt, proyecto);
+            pstmt.setInt(6, proyecto.getId());
+            
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error al actualizar proyecto", ex);
+            return false;
+        }
+    }
+    
+    public boolean eliminar(int idProyecto) {
+        String sql = "DELETE FROM proyectos WHERE id_proyecto=?";
+        
+        try (Connection conn = ConexionBD.obtenerConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idProyecto);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error al eliminar proyecto", ex);
+            return false;
+        }
+    }
+    
+    public Proyecto obtenerPorId(int idProyecto) {
+        String sql = "SELECT * FROM proyectos WHERE id_proyecto=?";
+        
+        try (Connection conn = ConexionBD.obtenerConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, idProyecto);
+            
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    conn.commit();
-                    return mapearProyecto(rs);
+                    return mapProyectoFromResultSet(rs);
                 }
             }
-        } catch (SQLException e) {
-            ConexionBD.rollback();
-            LOGGER.log(Level.SEVERE, "Error al obtener proyecto con ID: " + id, e);
-            throw new RuntimeException("Error al obtener proyecto de la base de datos", e);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error al obtener proyecto", ex);
         }
         return null;
     }
     
-    public boolean agregar(Proyecto proyecto) {
-        if (proyecto == null) {
-            throw new IllegalArgumentException("El proyecto no puede ser nulo");
-        }
+    public List<Proyecto> listarTodos() {
+        List<Proyecto> proyectos = new ArrayList<>();
+        String sql = "SELECT * FROM proyectos ORDER BY fecha_inicio DESC";
         
         try (Connection conn = ConexionBD.obtenerConexion();
-             PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
-            setParametrosProyecto(pstmt, proyecto);
-            
-            int affectedRows = pstmt.executeUpdate();
-            
-            if (affectedRows == 0) {
-                throw new SQLException("La creación del proyecto falló, ninguna fila afectada");
+            while (rs.next()) {
+                proyectos.add(mapProyectoFromResultSet(rs));
             }
-            
-            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    proyecto.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new SQLException("La creación del proyecto falló, no se obtuvo ID");
-                }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error al listar proyectos", ex);
+        }
+        return proyectos;
+    }
+    
+    public List<Proyecto> buscarPorNombre(String nombre) {
+    List<Proyecto> proyectos = new ArrayList<>();
+    String sql = "SELECT * FROM proyectos WHERE nombre LIKE ? ORDER BY fecha_inicio DESC";
+    
+    try (Connection conn = ConexionBD.obtenerConexion();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        pstmt.setString(1, "%" + nombre + "%");
+        
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                proyectos.add(mapProyectoFromResultSet(rs));
             }
-            
-            conn.commit();
-            return true;
-        } catch (SQLException e) {
-            ConexionBD.rollback();
-            LOGGER.log(Level.SEVERE, "Error al agregar proyecto", e);
-            throw new RuntimeException("Error al guardar proyecto en la base de datos", e);
         }
+    } catch (SQLException ex) {
+        LOGGER.log(Level.SEVERE, "Error al buscar proyectos por nombre", ex);
+        }
+     return proyectos;
     }
     
-    public boolean actualizar(Proyecto proyecto) {
-        if (proyecto == null || proyecto.getId() <= 0) {
-            throw new IllegalArgumentException("Proyecto inválido para actualización");
-        }
-        
-        try (Connection conn = ConexionBD.obtenerConexion();
-             PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE)) {
-            
-            setParametrosProyecto(pstmt, proyecto);
-            pstmt.setInt(6, proyecto.getId());
-            
-            int affectedRows = pstmt.executeUpdate();
-            conn.commit();
-            
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            ConexionBD.rollback();
-            LOGGER.log(Level.SEVERE, "Error al actualizar proyecto con ID: " + proyecto.getId(), e);
-            throw new RuntimeException("Error al actualizar proyecto en la base de datos", e);
-        }
+    // Métodos auxiliares
+    private void setProyectoParameters(PreparedStatement pstmt, Proyecto proyecto) 
+            throws SQLException {
+        pstmt.setString(1, proyecto.getNombre());
+        pstmt.setString(2, proyecto.getDescripcion());
+        pstmt.setDate(3, new java.sql.Date(proyecto.getFechaInicio().getTime()));
+        pstmt.setDate(4, proyecto.getFechaFin() != null ? 
+            new java.sql.Date(proyecto.getFechaFin().getTime()) : null);
+        pstmt.setString(5, proyecto.getEstado());
     }
     
-    public boolean eliminar(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("ID de proyecto inválido");
-        }
-        
-        try (Connection conn = ConexionBD.obtenerConexion();
-             PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE)) {
-            
-            pstmt.setInt(1, id);
-            int affectedRows = pstmt.executeUpdate();
-            conn.commit();
-            
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            ConexionBD.rollback();
-            LOGGER.log(Level.SEVERE, "Error al eliminar proyecto con ID: " + id, e);
-            throw new RuntimeException("Error al eliminar proyecto de la base de datos", e);
-        }
-    }
-    
-    private Proyecto mapearProyecto(ResultSet rs) throws SQLException {
+    private Proyecto mapProyectoFromResultSet(ResultSet rs) throws SQLException {
         Proyecto proyecto = new Proyecto();
-        proyecto.setId(rs.getInt("id"));
+        proyecto.setId(rs.getInt("id_proyecto"));
         proyecto.setNombre(rs.getString("nombre"));
         proyecto.setDescripcion(rs.getString("descripcion"));
         proyecto.setFechaInicio(rs.getDate("fecha_inicio"));
         proyecto.setFechaFin(rs.getDate("fecha_fin"));
         proyecto.setEstado(rs.getString("estado"));
         return proyecto;
-    }
-    
-    private void setParametrosProyecto(PreparedStatement pstmt, Proyecto proyecto) throws SQLException {
-        pstmt.setString(1, proyecto.getNombre());
-        pstmt.setString(2, proyecto.getDescripcion());
-        pstmt.setDate(3, new java.sql.Date(proyecto.getFechaInicio().getTime()));
-        pstmt.setDate(4, new java.sql.Date(proyecto.getFechaFin().getTime()));
-        pstmt.setString(5, proyecto.getEstado());
     }
 }

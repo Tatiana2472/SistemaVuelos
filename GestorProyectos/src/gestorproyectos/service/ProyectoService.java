@@ -5,8 +5,9 @@
 package gestorproyectos.service;
 
 import gestorproyectos.dao.ProyectoDAO;
+import gestorproyectos.dao.TareaDAO;
 import gestorproyectos.model.Proyecto;
-import java.util.Date;
+import gestorproyectos.model.Tarea;
 import java.util.List;
 
 /**
@@ -15,67 +16,64 @@ import java.util.List;
  */
 public class ProyectoService {
    private final ProyectoDAO proyectoDAO;
+    private final TareaDAO tareaDAO;
     
     public ProyectoService() {
         this.proyectoDAO = new ProyectoDAO();
-    }
-    
-    public List<Proyecto> obtenerTodosLosProyectos() {
-        return proyectoDAO.obtenerTodos();
-    }
-    
-    public Proyecto obtenerProyectoPorId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("ID de proyecto inválido");
-        }
-        return proyectoDAO.obtenerPorId(id);
+        this.tareaDAO = new TareaDAO();
     }
     
     public boolean crearProyecto(Proyecto proyecto) {
-        validarProyecto(proyecto);
+        if (!validarProyecto(proyecto)) return false;
         return proyectoDAO.agregar(proyecto);
     }
     
     public boolean actualizarProyecto(Proyecto proyecto) {
-        validarProyecto(proyecto);
-        if (proyecto.getId() <= 0) {
-            throw new IllegalArgumentException("Proyecto debe tener un ID válido para actualización");
-        }
+        if (!validarProyecto(proyecto)) return false;
         return proyectoDAO.actualizar(proyecto);
     }
     
-    public boolean eliminarProyecto(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("ID de proyecto inválido");
-        }
-        return proyectoDAO.eliminar(id);
+    public boolean eliminarProyecto(int idProyecto) {
+        // Primero eliminamos las tareas asociadas
+        tareaDAO.eliminarPorProyecto(idProyecto);
+        return proyectoDAO.eliminar(idProyecto);
     }
     
-    private void validarProyecto(Proyecto proyecto) {
-        if (proyecto == null) {
-            throw new IllegalArgumentException("El proyecto no puede ser nulo");
+    public Proyecto obtenerProyecto(int idProyecto) {
+        Proyecto proyecto = proyectoDAO.obtenerPorId(idProyecto);
+        if (proyecto != null) {
+            proyecto.setTareas(tareaDAO.listarPorProyecto(idProyecto));
         }
-        
+        return proyecto;
+    }
+    
+    public List<Proyecto> listarProyectos() {
+        List<Proyecto> proyectos = proyectoDAO.listarTodos();
+        for (Proyecto p : proyectos) {
+            p.setTareas(tareaDAO.listarPorProyecto(p.getId()));
+        }
+        return proyectos;
+    }
+    
+    public List<Proyecto> buscarProyectosPorNombre(String nombre) {
+        List<Proyecto> proyectos = proyectoDAO.buscarPorNombre(nombre);
+        for (Proyecto p : proyectos) {
+            p.setTareas(tareaDAO.listarPorProyecto(p.getId()));
+        }
+        return proyectos;
+    }
+    
+    private boolean validarProyecto(Proyecto proyecto) {
         if (proyecto.getNombre() == null || proyecto.getNombre().trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre del proyecto es requerido");
+            return false;
         }
-        
         if (proyecto.getFechaInicio() == null) {
-            throw new IllegalArgumentException("La fecha de inicio es requerida");
+            return false;
         }
-        
-        if (proyecto.getFechaFin() == null) {
-            throw new IllegalArgumentException("La fecha de fin es requerida");
+        if (proyecto.getFechaFin() != null && 
+            proyecto.getFechaFin().before(proyecto.getFechaInicio())) {
+            return false;
         }
-        
-        if (proyecto.getFechaInicio().after(proyecto.getFechaFin())) {
-            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
-        }
-        
-        // Validar que la fecha de inicio no sea en el pasado (opcional)
-        Date hoy = new Date();
-        if (proyecto.getFechaInicio().before(hoy)) {
-            throw new IllegalArgumentException("La fecha de inicio no puede ser en el pasado");
-        }
+        return true;
     }
 }

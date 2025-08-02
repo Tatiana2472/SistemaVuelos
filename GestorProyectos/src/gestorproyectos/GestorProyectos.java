@@ -4,29 +4,27 @@
  */
 package gestorproyectos;
 
+import gestorproyectos.service.ProyectoService;
 import gestorproyectos.ui.MainFrame;
-import gestorproyectos.util.ExceptionHandler;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
-/**
- *
- * @author tatia
- */
 public class GestorProyectos {
-
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
-        ExceptionHandler.setupGlobalExceptionHandling();
-    
+        // Verificar conexión a BD
+        ProyectoService proyectoService = new ProyectoService();
+        try {
+            proyectoService.listarProyectos(); // Test de conexión
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, 
+                "Error al conectar con la base de datos:\n" + e.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+        
+        // Iniciar interfaz gráfica
         SwingUtilities.invokeLater(() -> {
-            try {
-                MainFrame frame = new MainFrame();
-                frame.setVisible(true);
-            } catch (Exception e) {
-                ExceptionHandler.showErrorDialog(e);
-            }
+            MainFrame mainFrame = new MainFrame();
+            mainFrame.setVisible(true);
         });
     }
-} 
+}

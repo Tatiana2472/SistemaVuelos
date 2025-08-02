@@ -7,57 +7,33 @@ package gestorproyectos.util;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 /**
  *
  * @author tatia
  */
 public class ConexionBD {
     private static final String URL = "jdbc:postgresql://localhost:5432/gestor_proyectos";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "admin";
-    private static Connection conexion = null;
-    
-    private ConexionBD() {} // Constructor privado para evitar instancias
+    private static final String USUARIO = "postgres";
+    private static final String CLAVE = "admi"; 
     
     public static Connection obtenerConexion() throws SQLException {
-        if (conexion == null || conexion.isClosed()) {
-            try {
-                // Configuración adicional para mejor manejo de conexión
-                Properties props = new Properties();
-                props.setProperty("user", USER);
-                props.setProperty("password", PASSWORD);
-                props.setProperty("ssl", "false");
-                props.setProperty("connectTimeout", "5"); // 5 segundos de timeout
-                
-                conexion = DriverManager.getConnection(URL, props);
-                conexion.setAutoCommit(false); // Mejor control de transacciones
-            } catch (SQLException e) {
-                throw new SQLException("Error al conectar a la base de datos: " + e.getMessage(), e);
-            }
+        try {
+            Class.forName("org.postgresql.Driver");
+            return DriverManager.getConnection(URL, USUARIO, CLAVE);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(ConexionBD.class.getName()).log(Level.SEVERE, "Error al cargar el driver JDBC", ex);
+            throw new SQLException("Driver JDBC no encontrado", ex);
         }
-        return conexion;
     }
     
-    public static void cerrarConexion() {
+    public static void cerrarConexion(Connection conexion) {
         if (conexion != null) {
             try {
-                if (!conexion.getAutoCommit()) {
-                    conexion.commit(); // Asegurar commit pendiente
-                }
                 conexion.close();
-            } catch (SQLException e) {
-                System.err.println("Error al cerrar conexión: " + e.getMessage());
-            }
-        }
-    }
-    
-    public static void rollback() {
-        if (conexion != null) {
-            try {
-                conexion.rollback();
-            } catch (SQLException e) {
-                System.err.println("Error al hacer rollback: " + e.getMessage());
+            } catch (SQLException ex) {
+                Logger.getLogger(ConexionBD.class.getName()).log(Level.SEVERE, "Error al cerrar la conexión", ex);
             }
         }
     }

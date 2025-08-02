@@ -20,15 +20,23 @@ public class Proyecto {
     private String estado;
     private List<Tarea> tareas;
     
-    // Constructor, getters y setters
-    public Proyecto() {}
+    // Constructor vacío (requerido para frameworks)
+    public Proyecto() {
+        this.estado = "Pendiente"; // Valor por defecto
+    }
     
-    public Proyecto(String nombre, String descripcion, Date fechaInicio, Date fechaFin) {
+    // Constructor con parámetros mínimos
+    public Proyecto(String nombre, String descripcion, Date fechaInicio) {
+        this(); // Llama al constructor vacío
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.fechaInicio = fechaInicio;
+    }
+    
+    // Constructor completo
+    public Proyecto(String nombre, String descripcion, Date fechaInicio, Date fechaFin) {
+        this(nombre, descripcion, fechaInicio); // Llama al constructor de 3 parámetros
         this.fechaFin = fechaFin;
-        this.estado = "Pendiente";
     }
 
     public int getId() {
@@ -86,5 +94,4 @@ public class Proyecto {
     public void setTareas(List<Tarea> tareas) {
         this.tareas = tareas;
     }
-    
 }

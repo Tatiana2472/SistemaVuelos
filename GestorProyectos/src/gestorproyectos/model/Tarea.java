@@ -10,34 +10,41 @@ import java.util.Date;
  * @author tatia
  */
 public class Tarea {
-    private int id;
+    private int idTarea;
+    private int idProyecto;
     private String nombre;
     private String descripcion;
     private Date fechaInicio;
     private Date fechaFin;
-    private String prioridad; // Alta, Media, Baja
-    private String estado;    // Pendiente, En progreso, Completada
-    private int idProyecto;
-    private int idUsuarioAsignado;
+    private String prioridad;
+    private String estado;
+    private int porcentajeCompletado;
 
-    public Tarea(int id, String nombre, String descripcion, Date fechaInicio, Date fechaFin, String prioridad, String estado, int idProyecto, int idUsuarioAsignado) {
-        this.id = id;
-        this.nombre = nombre;
-        this.descripcion = descripcion;
-        this.fechaInicio = fechaInicio;
-        this.fechaFin = fechaFin;
-        this.prioridad = prioridad;
-        this.estado = estado;
+     // Constructores
+    public Tarea() {}
+    
+    public Tarea(int idProyecto, String nombre, Date fechaInicio) {
         this.idProyecto = idProyecto;
-        this.idUsuarioAsignado = idUsuarioAsignado;
+        this.nombre = nombre;
+        this.fechaInicio = fechaInicio;
+        this.estado = "Pendiente";
+        this.porcentajeCompletado = 0;
     }
 
-    public int getId() {
-        return id;
+    public int getIdTarea() {
+        return idTarea;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setIdTarea(int idTarea) {
+        this.idTarea = idTarea;
+    }
+
+    public int getIdProyecto() {
+        return idProyecto;
+    }
+
+    public void setIdProyecto(int idProyecto) {
+        this.idProyecto = idProyecto;
     }
 
     public String getNombre() {
@@ -88,21 +95,18 @@ public class Tarea {
         this.estado = estado;
     }
 
-    public int getIdProyecto() {
-        return idProyecto;
+    public int getPorcentajeCompletado() {
+        return porcentajeCompletado;
     }
 
-    public void setIdProyecto(int idProyecto) {
-        this.idProyecto = idProyecto;
-    }
-
-    public int getIdUsuarioAsignado() {
-        return idUsuarioAsignado;
-    }
-
-    public void setIdUsuarioAsignado(int idUsuarioAsignado) {
-        this.idUsuarioAsignado = idUsuarioAsignado;
+    public void setPorcentajeCompletado(int porcentajeCompletado) {
+        this.porcentajeCompletado = porcentajeCompletado;
     }
     
-    
+    // Métodos adicionales
+    public boolean estaAtrasada() {
+        if (fechaFin == null) return false;
+        return new Date().after(fechaFin) && porcentajeCompletado < 100;
+    }
 }
+   

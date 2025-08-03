@@ -12,11 +12,16 @@ public class Usuario {
      private int id;
     private String nombre;
     private String correo;
-    private String password;
+    private String contrasena;  // Usa contrasena, no password
 
-    public Usuario() {}
-    public Usuario(int id, String nombre, String correo, String password) {
-        this.id = id; this.nombre = nombre; this.correo = correo; this.password = password;
+    public Usuario() { }
+
+    // Constructor con parámetros para facilitar creación de objetos
+    public Usuario(int id, String nombre, String correo, String contrasena) {
+        this.id = id;
+        this.nombre = nombre;
+        this.correo = correo;
+        this.contrasena = contrasena;
     }
 
     public int getId() {
@@ -43,11 +48,11 @@ public class Usuario {
         this.correo = correo;
     }
 
-    public String getPassword() {
-        return password;
+    public String getContrasena() {
+        return contrasena;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
     }
 }

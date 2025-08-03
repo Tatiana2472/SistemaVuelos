@@ -4,6 +4,9 @@
  */
 package sistemavuelos.model;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  *
@@ -13,13 +16,17 @@ public class Reserva {
     private int id;
     private int usuarioId;
     private int vueloId;
-    private Timestamp fechaReserva;
+    private LocalDateTime fechaReserva;
 
-    public Reserva() {}
-    public Reserva(int id, int usuarioId, int vueloId, Timestamp fechaReserva) {
-        this.id = id; this.usuarioId = usuarioId; this.vueloId = vueloId; this.fechaReserva = fechaReserva;
+    public Reserva() { }
+
+    public Reserva(int id, int vueloId, int usuarioId, LocalDateTime fechaReserva) {
+        this.id = id;
+        this.vueloId = vueloId;
+        this.usuarioId = usuarioId;
+        this.fechaReserva = fechaReserva;
     }
-
+    
     public int getId() {
         return id;
     }
@@ -44,11 +51,11 @@ public class Reserva {
         this.vueloId = vueloId;
     }
 
-    public Timestamp getFechaReserva() {
+    public LocalDateTime getFechaReserva() {
         return fechaReserva;
     }
 
-    public void setFechaReserva(Timestamp fechaReserva) {
+    public void setFechaReserva(LocalDateTime fechaReserva) {
         this.fechaReserva = fechaReserva;
     }
 }
